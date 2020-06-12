@@ -5,6 +5,7 @@ import pygame
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
+from alien import Alien
 
 class AlienInvasion:
 	"""Overall class to manage game assets and behavior."""
@@ -22,6 +23,9 @@ class AlienInvasion:
 		
 		self.ship = Ship(self)
 		self.bullets = pygame.sprite.Group()
+		self.aliens = pygame.sprite.Group()
+		
+		self._create_fleet()
 	
 	def run_game(self):
 		"""Start the main loop for the game."""
@@ -69,6 +73,7 @@ class AlienInvasion:
 		"""Update position of bullets and get rid of old bullets."""
 		# Update bullet positions.
 		self.bullets.update()
+		# The line self.bullets.update() calls bullet.update() for each bullet we place in the group bullets.
 		
 		# Get rid of bullets that have disappeared.
 		# We use copy here because we can't delete a list we're looping through
@@ -77,13 +82,22 @@ class AlienInvasion:
 				self.bullets.remove(bullet)
 		# Takes more time to write output to the terminal than it does to draw graphics to the game window
 		#print(len(self.bullets))
-					
+	
+	def _create_fleet(self):
+		"""Create the fleet of aliens."""
+		# Make an alien.
+		alien = Alien(self)
+		self.aliens.add(alien)
+
 	def _update_screen(self):
 		"""Update images on the screen, and flip to the new screen."""
 		self.screen.fill(self.settings.bg_color)
 		self.ship.blitme()
 		for bullet in self.bullets.sprites():
 			bullet.draw_bullet()
+		self.aliens.draw(self.screen)
+		# This is a sprite group method and when you call draw() on a group, Pygame draws each element in the group at the position
+		# defined by its rect attribute.  It requires one argument: a surface on which to draw the elements from the group
 		
 		pygame.display.flip()
 		
