@@ -5,6 +5,7 @@ import pygame
 
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
@@ -24,8 +25,9 @@ class AlienInvasion:
 		#self.settings.screen_height = self.screen.get_rect().height
 		pygame.display.set_caption("Alien Invasion")
 		
-		# Create an instance to store game statistics.
+		# Create an instance to store game statistics, and create a scoreboard.
 		self.stats = GameStats(self)
+		self.sb = Scoreboard(self)
 		
 		self.ship = Ship(self)
 		self.bullets = pygame.sprite.Group()
@@ -73,6 +75,9 @@ class AlienInvasion:
 			# Reset the game statistics.
 			self.stats.reset_stats()
 			self.stats.game_active = True
+			self.sb.prep_score()
+			self.sb.prep_level()
+			self.sb.prep_ships()
 			
 			# Get rid of any remaining aliens and bullets.
 			self.aliens.empty()
@@ -135,11 +140,21 @@ class AlienInvasion:
 		#The two True arguments tell Pygame to delete the bullets and aliens that have collided
 		#To make a high powered bullet that has collateral damage turn the first True to False
 		
+		if collisions:
+			for aliens in collisions.values(): # Each bullet has list of aliens associated with it that was hit
+				self.stats.score += self.settings.alien_points * len(aliens)
+			self.sb.prep_score()
+			self.sb.check_high_score()
+		
 		if not self.aliens:
 			# Destroy existing bullets and create a new fleet.
 			self.bullets.empty()
 			self._create_fleet()
 			self.settings.increase_speed()
+			
+			# Increase level.
+			self.stats.level += 1
+			self.sb.prep_level()
 	
 	def _update_aliens(self):
 		"""Check if the fleet is at an edge, then update the positions of all aliens in the fleet."""
@@ -166,8 +181,9 @@ class AlienInvasion:
 	def _ship_hit(self):
 		"""Respond to the ship being hit by an alien."""
 		if self.stats.ships_left > 0:
-			# Decrement ships_left.
+			# Decrement ships_left, and update scoreboard.
 			self.stats.ships_left -= 1
+			self.sb.prep_ships()
 		
 			# Get rid of any remaining aliens and bullets.
 			self.aliens.empty()
@@ -233,6 +249,9 @@ class AlienInvasion:
 		self.aliens.draw(self.screen)
 		# This is a sprite group method and when you call draw() on a group, Pygame draws each element in the group at the position
 		# defined by its rect attribute.  It requires one argument: a surface on which to draw the elements from the group
+		
+		# Draw the score information.
+		self.sb.show_score()
 		
 		# Draw the play button if the game is inactive.
 		# Comes last so it shows up over the other previously drawn elements.
