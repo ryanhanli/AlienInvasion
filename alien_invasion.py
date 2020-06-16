@@ -8,6 +8,7 @@ from game_stats import GameStats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
+from button import Button
 
 class AlienInvasion:
 	"""Overall class to manage game assets and behavior."""
@@ -31,6 +32,9 @@ class AlienInvasion:
 		self.aliens = pygame.sprite.Group()
 		
 		self._create_fleet()
+		
+		#Make the Play Button.
+		self.play_button = Button(self, "Play")
 	
 	def run_game(self):
 		"""Start the main loop for the game."""
@@ -53,6 +57,33 @@ class AlienInvasion:
 				self._check_keydown_events(event)
 			elif event.type == pygame.KEYUP:
 				self._check_keyup_events(event)
+			elif event.type == pygame.MOUSEBUTTONDOWN:
+				#Returns a tuple of x and y coordinates
+				mouse_pos = pygame.mouse.get_pos()
+				self._check_play_button(mouse_pos)
+				
+	def _check_play_button(self, mouse_pos):
+		"""Start a new game when the player clicks Play."""
+		#Checks if point of the mouse click overlaps the region defined by the Play button rect.
+		button_clicked = self.play_button.rect.collidepoint(mouse_pos)
+		if button_clicked and not self.stats.game_active:
+			# Reset the game settings.
+			self.settings.initialize_dynamic_settings()
+			
+			# Reset the game statistics.
+			self.stats.reset_stats()
+			self.stats.game_active = True
+			
+			# Get rid of any remaining aliens and bullets.
+			self.aliens.empty()
+			self.bullets.empty()
+			
+			# Create a new fleet and center the ship.
+			self._create_fleet()
+			self.ship.center_ship()
+			
+			# Hide the mouse cursor.
+			pygame.mouse.set_visible(False)
 					
 	def _check_keydown_events(self, event):
 		"""Respond to keypresses."""
@@ -108,6 +139,7 @@ class AlienInvasion:
 			# Destroy existing bullets and create a new fleet.
 			self.bullets.empty()
 			self._create_fleet()
+			self.settings.increase_speed()
 	
 	def _update_aliens(self):
 		"""Check if the fleet is at an edge, then update the positions of all aliens in the fleet."""
@@ -149,6 +181,7 @@ class AlienInvasion:
 			sleep(0.5)
 		else:
 			self.stats.game_active = False
+			pygame.mouse.set_visible(True)
 	
 	def _create_fleet(self):
 		"""Create the fleet of aliens."""
@@ -200,6 +233,11 @@ class AlienInvasion:
 		self.aliens.draw(self.screen)
 		# This is a sprite group method and when you call draw() on a group, Pygame draws each element in the group at the position
 		# defined by its rect attribute.  It requires one argument: a surface on which to draw the elements from the group
+		
+		# Draw the play button if the game is inactive.
+		# Comes last so it shows up over the other previously drawn elements.
+		if not self.stats.game_active:
+			self.play_button.draw_button()
 		
 		pygame.display.flip()
 		
